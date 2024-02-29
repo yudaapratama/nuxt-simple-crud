@@ -1,0 +1,148 @@
+<template>
+  <main>
+    <AppHeader :title="title" :description="description" class="mb-8" />
+    <div class="space-y-4">
+      <div class="flex justify-between">
+        <UInput v-model="user.page.searchQuery" icon="i-mynaui-search" placeholder="Search..." />
+        <!-- <div class="flex items-center gap-1.5 ">
+          <span class="text-sm leading-5">Rows per page:</span>
+
+          <USelectMenu v-model="selectedRows" :options="rowsPerPage" placeholder="Status" class="w-40" />
+        </div> -->
+      </div>
+      <UTable
+        :columns="columns"
+        :rows="user.list || []"
+        :loading="user.loading.content"
+        class="border rounded-md dark:border-gray-700 dark:bg-slate-900"
+      >
+        <template #actions-data="{ row }">
+          <UDropdown :items="items(row)">
+            <UTooltip text="Actions">
+              <UButton color="gray" variant="ghost" icon="i-mynaui-dots" />
+            </UTooltip>
+          </UDropdown>
+        </template>
+      </UTable>
+      <div class="flex justify-center border-gray-200 dark:border-gray-700">
+        <UPagination
+          v-model="user.page.current"
+          :page-count="user.page.limit"
+          :total="user.page.total || 0"
+          size="sm"
+          :max="5"
+        />
+      </div>
+    </div>
+
+    <UModal v-model="isOpen" prevent-close>
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+              Update Data
+            </h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="isOpen = false" />
+          </div>
+        </template>
+        <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
+          <UInput v-model="state.id" type="hidden" />
+          <UFormGroup label="Name" name="name">
+            <UInput v-model="state.name" />
+          </UFormGroup>
+
+          <UFormGroup label="Username" name="username">
+            <UInput v-model="state.username" />
+          </UFormGroup>
+
+          <UFormGroup label="Email" name="email">
+            <UInput v-model="state.email" />
+          </UFormGroup>
+
+          <UFormGroup label="Phone" name="phone">
+            <UInput v-model="state.phone" />
+          </UFormGroup>
+
+          <UFormGroup label="Website" name="website">
+            <UInput v-model="state.website" />
+          </UFormGroup>
+
+          <UButton type="submit" :loading="user.loading.button" :disabled="user.loading.button">
+            Submit
+          </UButton>
+        </UForm>
+      </UCard>
+    </UModal>
+  </main>
+</template>
+
+<script lang="ts" setup>
+import { z } from 'zod'
+import type { FormSubmitEvent } from '#ui/types'
+
+const user = useUsersStore()
+
+const title = 'CRUD'
+const description = 'Simple Create, Read, Update, and Delete using Nuxt 3'
+const isOpen = ref(false)
+
+const columns = [
+  { key: 'id', label: 'ID' },
+  { key: 'name', label: 'NAME' },
+  { key: 'username', label: 'USERNAME' },
+  { key: 'email', label: 'EMAIL' },
+  { key: 'phone', label: 'PHONE' },
+  { key: 'website', label: 'WEBSITE' },
+  { key: 'actions' }
+]
+
+const schema = z.object({
+  id: z.number().optional(),
+  name: z.string(),
+  username: z.string(),
+  email: z.string().email('Email must be valid'),
+  phone: z.string(),
+  website: z.string()
+})
+
+type Schema = z.output<typeof schema>
+
+const state = reactive({
+  id: 0,
+  name: '',
+  username: '',
+  email: '',
+  phone: '',
+  website: ''
+})
+
+async function onSubmit (event: FormSubmitEvent<Schema>): Promise<void> {
+  await user.update(event.data)
+  isOpen.value = false
+}
+
+const items = (row: { id: any }): any => [
+  [{
+    label: 'Update',
+    icon: 'i-mynaui-edit-one',
+    click: () => {
+      isOpen.value = true
+      const data = user.getById(row.id)
+      state.id = data?.id as number
+      state.name = data?.name as string
+      state.username = data?.username as string
+      state.email = data?.email as string
+      state.phone = data?.phone as string
+      state.website = data?.website as string
+    }
+  }, {
+    label: 'Delete',
+    icon: 'i-mynaui-trash'
+  }]
+]
+
+onMounted(() => {
+  user.get()
+})
+
+</script>
