@@ -121,10 +121,18 @@
 import { z } from 'zod'
 import type { FormSubmitEvent } from '#ui/types'
 
+const title = 'Simple CRUD'
+const description = 'Simple Create, Read, Update, and Delete using Nuxt 3'
+
+useSeoMeta({
+  title,
+  ogTitle: title,
+  description,
+  ogDescription: description
+})
+
 const user = useUsersStore()
 
-const title = 'CRUD'
-const description = 'Simple Create, Read, Update, and Delete using Nuxt 3'
 const isOpen = reactive({
   addOrUpdate: false,
   delete: false,
