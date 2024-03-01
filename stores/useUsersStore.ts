@@ -61,12 +61,12 @@ export const useUsersStore = defineStore('users', () => {
   const update = async (payload: User): Promise<void> => {
     try {
       loading.button = true
-      const response = await $fetch<User>(`${endpoint}/${payload.id}`, {
-        method: 'PUT',
+      await $fetch<User>(`${endpoint}/${payload.id}`, {
+        method: 'PATCH',
         body: payload
       })
       users.value = users.value?.map((e) => {
-        e = e.id === payload.id ? response : e
+        e = e.id === payload.id ? payload : e
         return e
       })
     } catch (error) {
@@ -83,6 +83,7 @@ export const useUsersStore = defineStore('users', () => {
         method: 'DELETE'
       })
       users.value = users.value?.filter(e => e.id !== payload)
+      page.current = 1
     } catch (error) {
       console.log(error)
     } finally {
