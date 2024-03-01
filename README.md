@@ -1,8 +1,14 @@
 # Nuxt Simple CRUD
 
-Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Simple CRUD using Nuxt 3
 
-## Setup
+## 💻 Tech Stack
+- nuxt 3
+- nuxt/ui
+- nuxt/google-fonts
+- pinia
+
+## 🔨 Setup
 
 Make sure to install the dependencies:
 
@@ -11,7 +17,7 @@ Make sure to install the dependencies:
 npm install
 ```
 
-## Development Server
+## 🏃 Development Server
 
 Start the development server on `http://localhost:3000`:
 
