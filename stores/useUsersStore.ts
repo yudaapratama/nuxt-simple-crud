@@ -39,6 +39,21 @@ export const useUsersStore = defineStore('users', () => {
     }
   }
 
+  const add = async (payload: User): Promise<void> => {
+    try {
+      loading.button = true
+      const response = await $fetch<User>(endpoint, {
+        method: 'POST',
+        body: payload
+      })
+      users.value = [...users.value!, response]
+    } catch (error) {
+      console.log(error)
+    } finally {
+      loading.button = false
+    }
+  }
+
   const getById = (id: number): User | undefined => {
     return users.value?.find(e => e.id === id)
   }
@@ -61,12 +76,28 @@ export const useUsersStore = defineStore('users', () => {
     }
   }
 
+  const destroy = async (payload: number): Promise<void> => {
+    try {
+      loading.button = true
+      await $fetch<User>(`${endpoint}/${payload}`, {
+        method: 'DELETE'
+      })
+      users.value = users.value?.filter(e => e.id !== payload)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      loading.button = false
+    }
+  }
+
   return {
     loading,
     list,
     page,
     get,
+    add,
     getById,
-    update
+    update,
+    destroy
   }
 })
