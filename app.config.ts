@@ -9,5 +9,6 @@ export default defineAppConfig({
     container: {
       constrained: 'w-full'
     }
-  }
+  },
+  nuxtIcon: {}
 })
