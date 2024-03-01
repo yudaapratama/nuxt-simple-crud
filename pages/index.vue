@@ -4,11 +4,19 @@
     <div class="space-y-4">
       <div class="flex justify-between">
         <UInput v-model="user.page.searchQuery" icon="i-mynaui-search" placeholder="Search..." />
-        <!-- <div class="flex items-center gap-1.5 ">
-          <span class="text-sm leading-5">Rows per page:</span>
-
-          <USelectMenu v-model="selectedRows" :options="rowsPerPage" placeholder="Status" class="w-40" />
-        </div> -->
+        <UButton
+          label="Add Data"
+          @click="() => {
+            isOpen.type = true
+            isOpen.addOrUpdate = true
+            state.id = 0
+            state.name = undefined
+            state.username = undefined
+            state.email = undefined
+            state.phone = undefined
+            state.website = undefined
+          }"
+        />
       </div>
       <UTable
         :columns="columns"
@@ -35,18 +43,24 @@
       </div>
     </div>
 
-    <UModal v-model="isOpen" prevent-close>
+    <UModal v-model="isOpen.addOrUpdate" prevent-close>
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
               Update Data
             </h3>
-            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="isOpen = false" />
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-x-mark-20-solid"
+              class="-my-1"
+              :disabled="user.loading.button"
+              @click="isOpen.addOrUpdate = false"
+            />
           </div>
         </template>
         <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-          <UInput v-model="state.id" type="hidden" />
           <UFormGroup label="Name" name="name">
             <UInput v-model="state.name" />
           </UFormGroup>
@@ -73,6 +87,33 @@
         </UForm>
       </UCard>
     </UModal>
+
+    <UModal v-model="isOpen.delete" prevent-close>
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+              Delete Data
+            </h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-x-mark-20-solid"
+              class="-my-1"
+              :disabled="user.loading.button"
+              @click="isOpen.delete = false"
+            />
+          </div>
+        </template>
+        <div class="flex flex-col items-center space-y-8">
+          <span>Are you sure want to delete this data ?</span>
+          <div class="flex flex-row gap-4">
+            <UButton color="red" label="Yes, Delete" :loading="user.loading.button" :disabled="user.loading.button" @click="onDelete" />
+            <UButton variant="ghost" color="gray" label="Cancel" :disabled="user.loading.button" @click="isOpen.delete = false" />
+          </div>
+        </div>
+      </UCard>
+    </UModal>
   </main>
 </template>
 
@@ -84,7 +125,11 @@ const user = useUsersStore()
 
 const title = 'CRUD'
 const description = 'Simple Create, Read, Update, and Delete using Nuxt 3'
-const isOpen = ref(false)
+const isOpen = reactive({
+  addOrUpdate: false,
+  delete: false,
+  type: false
+})
 
 const columns = [
   { key: 'id', label: 'ID' },
@@ -109,16 +154,25 @@ type Schema = z.output<typeof schema>
 
 const state = reactive({
   id: 0,
-  name: '',
-  username: '',
-  email: '',
-  phone: '',
-  website: ''
+  name: undefined,
+  username: undefined,
+  email: undefined,
+  phone: undefined,
+  website: undefined
 })
 
 async function onSubmit (event: FormSubmitEvent<Schema>): Promise<void> {
-  await user.update(event.data)
-  isOpen.value = false
+  if (isOpen.type as boolean) {
+    await user.add(event.data)
+  } else {
+    await user.update(event.data)
+  }
+  isOpen.addOrUpdate = false
+}
+
+async function onDelete (): Promise<void> {
+  await user.destroy(state.id)
+  isOpen.delete = false
 }
 
 const items = (row: { id: any }): any => [
@@ -126,18 +180,23 @@ const items = (row: { id: any }): any => [
     label: 'Update',
     icon: 'i-mynaui-edit-one',
     click: () => {
-      isOpen.value = true
+      isOpen.type = false
+      isOpen.addOrUpdate = true
       const data = user.getById(row.id)
-      state.id = data?.id as number
-      state.name = data?.name as string
-      state.username = data?.username as string
-      state.email = data?.email as string
-      state.phone = data?.phone as string
-      state.website = data?.website as string
+      state.id = row.id
+      state.name = data?.name as undefined
+      state.username = data?.username as undefined
+      state.email = data?.email as undefined
+      state.phone = data?.phone as undefined
+      state.website = data?.website as undefined
     }
   }, {
     label: 'Delete',
-    icon: 'i-mynaui-trash'
+    icon: 'i-mynaui-trash',
+    click: () => {
+      state.id = row.id
+      isOpen.delete = true
+    }
   }]
 ]
 
