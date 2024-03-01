@@ -2,6 +2,8 @@
 
 Simple CRUD using Nuxt 3
 
+[Demo](https://nuxt-simple-crud-xi.vercel.app/)
+
 ## 💻 Tech Stack
 - nuxt 3
 - nuxt/ui
