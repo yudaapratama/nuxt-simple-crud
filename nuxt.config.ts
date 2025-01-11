@@ -1,19 +1,23 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
+
   typescript: {
     strict: true,
     typeCheck: true
   },
+
   modules: [
     '@nuxt/ui',
     '@nuxtjs/google-fonts',
     '@nuxt/image',
     '@pinia/nuxt'
   ],
+
   ui: {
     icons: ['heroicons', 'mynaui']
   },
+
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
@@ -26,10 +30,13 @@ export default defineNuxtConfig({
       }
     }
   },
+
   googleFonts: {
     display: 'swap',
     families: {
       Nunito: [400, 500, 600, 700, 800, 900]
     }
-  }
+  },
+
+  compatibilityDate: '2025-01-08'
 })

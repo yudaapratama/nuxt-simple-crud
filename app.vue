@@ -1,12 +1,10 @@
 <template>
   <div>
-    <!-- <NuxtLoadingIndicator color="#14b8a6" /> -->
     <AppNavbar />
     <UContainer class="py-12">
       <NuxtPage />
     </UContainer>
   </div>
-  <!-- <AppFooter /> -->
 </template>
 
 <style>

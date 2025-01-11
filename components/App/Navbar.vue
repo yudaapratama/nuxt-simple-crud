@@ -10,7 +10,7 @@
         </NuxtLink>
       </div>
       <div class="flex items-center justify-end lg:flex-1 gap-1.5">
-        <div class="relative inline-flex">
+        <!-- <div class="relative inline-flex">
           <UTooltip text="Github" :ui="{ popper: { strategy: 'absolute' } }">
             <ULink
               to="https://github.com/yudaapratama/nuxt-simple-crud"
@@ -23,7 +23,7 @@
         </div>
         <div class="relative inline-flex">
           <AppToggle />
-        </div>
+        </div> -->
       </div>
     </div>
   </header>

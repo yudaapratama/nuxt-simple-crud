@@ -2,48 +2,35 @@
   <main>
     <AppHeader :title="title" :description="description" class="mb-8" />
     <div class="space-y-4">
-      <div class="flex justify-between">
-        <UInput v-model="user.page.searchQuery" icon="i-mynaui-search" placeholder="Search..." />
+      <div class="flex justify-start gap-2">
+        <UInput type="file" icon="i-mynaui-folder" :disabled="page.loading" @change="handleFileChanges($event)" />
         <UButton
-          label="Add Data"
-          @click="() => {
-            isOpen.type = true
-            isOpen.addOrUpdate = true
-            state.id = 0
-            state.name = undefined
-            state.username = undefined
-            state.email = undefined
-            state.phone = undefined
-            state.website = undefined
-          }"
+          label="Process"
+          :loading="page.loading"
+          @click="onSubmit"
+        />
+        <UButton
+          label="Reset"
+          color="gray"
+          @click="onReset"
         />
       </div>
       <UTable
+        v-if="columns.length > 0"
         :columns="columns"
-        :rows="user.list || []"
-        :loading="user.loading.content"
+        :rows="cells"
+        :loading="page.loading"
         class="border rounded-md dark:border-gray-700 dark:bg-slate-900"
       >
         <template #actions-data="{ row }">
-          <UDropdown :items="items(row)">
-            <UTooltip text="Actions">
-              <UButton color="gray" variant="ghost" icon="i-mynaui-dots" />
-            </UTooltip>
-          </UDropdown>
+          <UTooltip text="Actions">
+            <UButton color="gray" variant="ghost" size="xs" icon="i-mynaui-edit-one" @click="onClick(row)" />
+          </UTooltip>
         </template>
       </UTable>
-      <div class="flex justify-center border-gray-200 dark:border-gray-700">
-        <UPagination
-          v-model="user.page.current"
-          :page-count="user.page.limit"
-          :total="user.page.total || 0"
-          size="sm"
-          :max="5"
-        />
-      </div>
     </div>
 
-    <UModal v-model="isOpen.addOrUpdate" prevent-close>
+    <UModal v-model="isOpen" prevent-close>
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
@@ -55,61 +42,19 @@
               variant="ghost"
               icon="i-heroicons-x-mark-20-solid"
               class="-my-1"
-              :disabled="user.loading.button"
-              @click="isOpen.addOrUpdate = false"
+              @click="isOpen = false"
             />
           </div>
         </template>
-        <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-          <UFormGroup label="Name" name="name">
-            <UInput v-model="state.name" />
-          </UFormGroup>
 
-          <UFormGroup label="Username" name="username">
-            <UInput v-model="state.username" />
-          </UFormGroup>
-
-          <UFormGroup label="Email" name="email">
-            <UInput v-model="state.email" />
-          </UFormGroup>
-
-          <UFormGroup label="Phone" name="phone">
-            <UInput v-model="state.phone" />
-          </UFormGroup>
-
-          <UFormGroup label="Website" name="website">
-            <UInput v-model="state.website" />
-          </UFormGroup>
-
-          <UButton type="submit" :loading="user.loading.button" :disabled="user.loading.button">
-            Submit
-          </UButton>
-        </UForm>
-      </UCard>
-    </UModal>
-
-    <UModal v-model="isOpen.delete" prevent-close>
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-              Delete Data
-            </h3>
-            <UButton
-              color="gray"
-              variant="ghost"
-              icon="i-heroicons-x-mark-20-solid"
-              class="-my-1"
-              :disabled="user.loading.button"
-              @click="isOpen.delete = false"
-            />
-          </div>
-        </template>
-        <div class="flex flex-col items-center space-y-8">
-          <span>Are you sure want to delete this data ?</span>
-          <div class="flex flex-row gap-4">
-            <UButton color="red" label="Yes, Delete" :loading="user.loading.button" :disabled="user.loading.button" @click="onDelete" />
-            <UButton variant="ghost" color="gray" label="Cancel" :disabled="user.loading.button" @click="isOpen.delete = false" />
+        <div class="flex flex-col gap-4">
+          <template v-for="column in selecteditem.actualCellCount" :key="column">
+            <UInput v-model="dynamicModel[column]" :disabled="typeof selecteditem.getCell(column).value === 'object'" />
+          </template>
+          <div class="flex justify-end">
+            <UButton type="submit">
+              Submit
+            </UButton>
           </div>
         </div>
       </UCard>
@@ -118,11 +63,9 @@
 </template>
 
 <script lang="ts" setup>
-import { z } from 'zod'
-import type { FormSubmitEvent } from '#ui/types'
-
-const title = 'Simple CRUD'
-const description = 'Simple Create, Read, Update, and Delete using Nuxt 3'
+import { Workbook, type Row, type Worksheet } from 'exceljs'
+const title = 'Simple Excel'
+const description = 'Process dynamic excel file'
 
 useSeoMeta({
   title,
@@ -131,85 +74,104 @@ useSeoMeta({
   ogDescription: description
 })
 
-const user = useUsersStore()
+const isOpen = ref<boolean>(false)
 
-const isOpen = reactive({
-  addOrUpdate: false,
-  delete: false,
-  type: false
+const Excel = new Workbook()
+const worksheet = ref<Worksheet>()
+const bufferFile = ref<ArrayBuffer>()
+
+const fileRef = ref<File>()
+const file = ref('')
+const page = reactive({
+  loading: false
 })
+const columns = ref([])
+const cells = ref([])
 
-const columns = [
-  { key: 'id', label: 'ID' },
-  { key: 'name', label: 'NAME' },
-  { key: 'username', label: 'USERNAME' },
-  { key: 'email', label: 'EMAIL' },
-  { key: 'phone', label: 'PHONE' },
-  { key: 'website', label: 'WEBSITE' },
-  { key: 'actions' }
-]
+const dataRaw = ref([] as Row[])
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+const selecteditem = ref({} as Row)
 
-const schema = z.object({
-  id: z.number().optional(),
-  name: z.string(),
-  username: z.string(),
-  email: z.string().email('Email must be valid'),
-  phone: z.string(),
-  website: z.string()
-})
+const dynamicModel = ref({} as any)
 
-type Schema = z.output<typeof schema>
+function handleFileChanges (file: any): void {
+  fileRef.value = file[0]
+}
 
-const state = reactive({
-  id: 0,
-  name: undefined,
-  username: undefined,
-  email: undefined,
-  phone: undefined,
-  website: undefined
-})
+function onSubmit (): void {
+  try {
+    columns.value = []
+    cells.value = []
+    page.loading = true
+    // const formData = new FormData()
+    // formData.append('file', fileRef.value as any)
 
-async function onSubmit (event: FormSubmitEvent<Schema>): Promise<void> {
-  if (isOpen.type as boolean) {
-    await user.add(event.data)
-  } else {
-    await user.update(event.data)
+    // const data = await fetch('/api/upload', {
+    //   method: 'POST',
+    //   body: formData
+    // })
+    // console.log('🚀 ~ onSubmit ~ data:', data)
+
+    const reader = new FileReader()
+
+    reader.readAsArrayBuffer(fileRef.value as Blob)
+    reader.onloadend = async () => {
+      bufferFile.value = reader.result as ArrayBuffer
+      const workbook = await Excel.xlsx.load(bufferFile.value as ArrayBuffer)
+
+      worksheet.value = workbook.getWorksheet()
+      for (let i = 1; i <= worksheet.value!.actualColumnCount; i++) {
+        columns.value.push({
+          key: `${i}`
+        })
+      }
+
+      columns.value.push({
+        key: 'actions'
+      })
+
+      worksheet.value?.eachRow((row) => {
+        dataRaw.value?.push(row)
+        let items = {}
+        row.eachCell((cell, colNumber) => {
+          if (cell.value !== null) {
+            items = Object.assign(items, { [`${colNumber}`]: typeof cell.value === 'object' ? cell.result : cell.value }, { row: row.number })
+          }
+        })
+        cells.value.push(items)
+      })
+
+      page.loading = false
+    }
+  } catch (error) {
+    console.error('🚀 ~ onSubmit ~ error:', error)
+    page.loading = false
   }
-  isOpen.addOrUpdate = false
 }
 
-async function onDelete (): Promise<void> {
-  await user.destroy(state.id)
-  isOpen.delete = false
+function onClick (item: any): void {
+  selecteditem.value = dataRaw.value?.find(e => e.number === item.row) as Row
+  selecteditem.value.eachCell((cell, colNumber) => {
+    if (cell.value !== null) {
+      dynamicModel.value[`${colNumber}`] = typeof cell.value === 'object' ? cell.result : cell.value
+    }
+  })
+  isOpen.value = true
 }
 
-const items = (row: { id: any }): any => [
-  [{
-    label: 'Update',
-    icon: 'i-mynaui-edit-one',
-    click: () => {
-      isOpen.type = false
-      isOpen.addOrUpdate = true
-      const data = user.getById(row.id)
-      state.id = row.id
-      state.name = data?.name as undefined
-      state.username = data?.username as undefined
-      state.email = data?.email as undefined
-      state.phone = data?.phone as undefined
-      state.website = data?.website as undefined
-    }
-  }, {
-    label: 'Delete',
-    icon: 'i-mynaui-trash',
-    click: () => {
-      state.id = row.id
-      isOpen.delete = true
-    }
-  }]
-]
+function onReset (): void {
+  worksheet.value = undefined
+  dataRaw.value = []
+  dynamicModel.value = {}
+  bufferFile.value = undefined
+  fileRef.value = undefined
+  file.value = ''
+  cells.value = []
+  columns.value = []
+}
 
 onMounted(() => {
-  user.get()
+
 })
 
 </script>
