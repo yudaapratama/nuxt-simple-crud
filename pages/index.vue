@@ -63,7 +63,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Workbook, type Row, type Worksheet } from 'exceljs'
+import ExcelJs from 'exceljs'
 const title = 'Simple Excel'
 const description = 'Process dynamic excel file'
 
@@ -76,8 +76,8 @@ useSeoMeta({
 
 const isOpen = ref<boolean>(false)
 
-const Excel = new Workbook()
-const worksheet = ref<Worksheet>()
+const Excel = new ExcelJs.Workbook()
+const worksheet = ref<ExcelJs.Worksheet>()
 const bufferFile = ref<ArrayBuffer>()
 
 const fileRef = ref<File>()
@@ -88,9 +88,9 @@ const page = reactive({
 const columns = ref<any>([])
 const cells = ref<any>([])
 
-const dataRaw = ref([] as Row[])
+const dataRaw = ref([] as ExcelJs.Row[])
 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-const selecteditem = ref({} as Row)
+const selecteditem = ref({} as ExcelJs.Row)
 
 const dynamicModel = ref({} as any)
 
@@ -150,7 +150,7 @@ function onSubmit (): void {
 }
 
 function onClick (item: any): void {
-  selecteditem.value = dataRaw.value?.find(e => e.number === item.row) as Row
+  selecteditem.value = dataRaw.value?.find(e => e.number === item.row) as ExcelJs.Row
   selecteditem.value.eachCell((cell, colNumber) => {
     if (cell.value !== null) {
       dynamicModel.value[`${colNumber}`] = typeof cell.value === 'object' ? cell.result : cell.value
