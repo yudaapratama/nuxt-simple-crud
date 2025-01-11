@@ -15,7 +15,7 @@ export default defineNuxtConfig({
   ],
 
   ui: {
-    icons: ['heroicons', 'mynaui']
+    // icons: ['heroicons', 'mynaui']
   },
 
   app: {

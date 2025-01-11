@@ -85,8 +85,8 @@ const file = ref('')
 const page = reactive({
   loading: false
 })
-const columns = ref([])
-const cells = ref([])
+const columns = ref<any>([])
+const cells = ref<any>([])
 
 const dataRaw = ref([] as Row[])
 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
